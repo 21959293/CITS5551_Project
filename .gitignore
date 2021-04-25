@@ -1,0 +1,17 @@
+# Ignore everything in repository root. 
+*
+
+# Files to not ignore.
+!/.gitignore
+!/.gitattributes
+!/*.csproj
+!/*.sln
+
+# Whitelist all other folders.
+!*/
+
+# Whitelist important files to track. 
+!*.cs
+
+# Folder to not ignore.
+# !/Assets/Scripts/

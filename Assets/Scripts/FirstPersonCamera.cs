@@ -7,7 +7,7 @@ using System.Collections;
 public class FirstPersonCamera : MonoBehaviour
 {
 
-    public float rangeX = 60.0f; // The allowable POV shift as the mouse is moved
+    public float rangeX = 180.0f; // The allowable POV shift as the mouse is moved
 
     // The allowable speed of the camera
     public float speedH = 2.0f;

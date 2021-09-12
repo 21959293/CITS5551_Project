@@ -54,7 +54,7 @@ public class FullMapCameraPosition : MonoBehaviour
         }
         else
         {
-            Debug.Log("Path does exist" + PathObject);
+            //Debug.Log("Path does exist" + PathObject);
         }
 
         // The number of nodes in the player's current path

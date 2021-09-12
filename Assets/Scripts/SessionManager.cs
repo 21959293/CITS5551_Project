@@ -98,7 +98,7 @@ public class SessionManager : MonoBehaviour
         //printing passenger pick up choices
         foreach(var xx in choices)
         {
-            UnityEngine.Debug.Log(xx.ToString());
+            //UnityEngine.Debug.Log(xx.ToString());
         }
 
     }

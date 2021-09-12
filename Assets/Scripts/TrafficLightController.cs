@@ -63,6 +63,7 @@ public class TrafficLightController : MonoBehaviour
         {
             configFilepath = System.IO.Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName) + @"/Resources/config.ini";
         }
+
         var parser = new FileIniDataParser();
         configData = parser.ReadFile(configFilepath);
         float.TryParse(configData["Session"]["trafficLightTransitionTime"], out waitTime);
@@ -83,7 +84,7 @@ public class TrafficLightController : MonoBehaviour
         // Make all possible traffic lights at the start (surprisingly quick)
         foreach (Graph.Node node in g.nodes)
         {
-            foreach(Graph.Node.Neighbour neighbour in node.neighbours)
+            foreach (Graph.Node.Neighbour neighbour in node.neighbours)
             {
                 if (trafficLightSet.Contains(neighbour.neighbourId)) isLightGreen(node.nodeId, neighbour.neighbourId);
             }
@@ -104,13 +105,15 @@ public class TrafficLightController : MonoBehaviour
             delaySet = true;
             setColour(trafficLightIndex, "yellow");
         }
+
         // Change lights
         if (Time.time > startTime + waitTime + changeDelayTime)
         {
             // Update traffic data
             startTime = Time.time;
+
             prevTrafficLightIndex = trafficLightIndex;
-            trafficLightIndex = (trafficLightIndex + 1) % 4;
+            trafficLightIndex = (trafficLightIndex + 1 == 4 ? 0 : trafficLightIndex + 1);
             //UnityEngine.Debug.Log("trafficLightIndex: " + trafficLightIndex);
             delaySet = false;
 
@@ -269,7 +272,8 @@ public class TrafficLightController : MonoBehaviour
         {
             checkDirection = calcBearing(fromNode, toNode);
             trafficLightDirectionMap.Add(fromNode + toNode, checkDirection);
-        } else
+        } 
+        else
         {
             checkDirection = trafficLightDirectionMap[fromNode + toNode];
         }

@@ -43,11 +43,11 @@ public class FollowPlayer : MonoBehaviour
 
         if (player == null)
         {
-            Debug.Log("PLayer in FollowPlayer doesn't exist" + player);
+            Debug.Log("Player in FollowPlayer doesn't exist" + player);
         }
         else
         {
-            Debug.Log("PLayer in FollowPlayer does exist" + player);
+            //Debug.Log("PLayer in FollowPlayer does exist" + player);
         }
 
         transform.position = following.CalculateMovement(player.transform.position);

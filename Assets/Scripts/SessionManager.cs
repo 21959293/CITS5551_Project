@@ -197,8 +197,7 @@ public class SessionManager : MonoBehaviour
         }
         updateMoneyText();
 
-        driver.SetActive(driverVisible);
-        
+        driver.SetActive(false);
 
         timer.pauseTimer();
         timer.setTimer(0);

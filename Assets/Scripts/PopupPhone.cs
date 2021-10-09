@@ -19,6 +19,7 @@ public class PopupPhone : MonoBehaviour
     public Button yesButton; // Clickable button to indicate acceptance
     public Button noButton; // Clickable button to indicate declining
     public SessionManager session; // Holds the current session
+    public GameObject carPassenger; // Holds the passenger game object
     public float movementSpeed = 100f; // How fast the phone should move up the screen
     public float phoneTop = 100f; // Indicates how high the phone should be when it is showing
     public float phoneBottom = -300f; // Indicates how high the phone should be when it is NOT showing
@@ -37,6 +38,8 @@ public class PopupPhone : MonoBehaviour
         fastClosePhone();
         noButton.onClick.AddListener(clickNoButton);
         yesButton.onClick.AddListener(clickYesButton);
+
+        carPassenger = GameObject.Find("Driver");
 
         sm = GameObject.Find("SessionManager").GetComponent<SessionManager>();
         g = GameObject.Find("Graph").GetComponent<GraphController>().graph;
@@ -112,6 +115,7 @@ public class PopupPhone : MonoBehaviour
     /// </summary>
     void clickYesButton()
     {
+        carPassenger.SetActive(true);
         session.acceptPrompt(timeElapsed);
         changePath();
         closePhone();

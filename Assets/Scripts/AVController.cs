@@ -26,6 +26,7 @@ public class AxleInfo
 /// </summary>
 public class AVController : MonoBehaviour
 {
+    bool haveStarted = false;
     public int currentNode = 0; // The node that the car is currently on
     public List<Transform> nodes; // The path the car is currently on as a list of transforms
     public Transform path; // The transform of the path GameObject of the car which contains nodes that make up the path
@@ -62,7 +63,7 @@ public class AVController : MonoBehaviour
     private List<bool> oneWays; // A list of all oneway streets since they add some extra confusion
 
     private float startTime; // The start time of the car
-    private bool reachedDestination = false; // Whether the car has reached its destination or not
+    private bool haveReachedDestination = false; // Whether the car has reached its destination or not
 
     private TrafficLightController trafficLightController; // Controls the traffic lights and used to check whether a car should stop before lights
     public List<string> pathList; // A list of all path node ids
@@ -72,16 +73,16 @@ public class AVController : MonoBehaviour
 
     private RaycastHit rayHit; // Used for detecting if another car is too close
     private bool hitDetected = false; // True when another car is too close
-    private float castDistance = 25f; // The proximity distance of the raycast
+    private float castDistance = 20f; // The proximity distance of the raycast
 
     public bool roundOver = true; // Indicates whether the round is over or if cars should keep driving
 
-    private bool wasAtTrafficLight = false;
+    private bool isAtTrafficLight = false;
 
     /// <summary>
     /// Indicates valid directions for the car to turn
     /// </summary>
-    public enum direction 
+    public enum turningDirection 
     {
         left,
         right,
@@ -96,11 +97,11 @@ public class AVController : MonoBehaviour
         west = 4
     }
 
-    public direction turning; // The direction the car is currently going
+    public turningDirection turning; // The direction the car is currently going
 
     public bearing currentBearing; // The bearing the car is currently on
 
-    public bool inIntersection = false; // True when the car is within a certain distance of an intersection
+    public bool isAtIntersection = false; // True when the car is within a certain distance of an intersection
     public bool stopped = false; // True when the car has stopped to wait for another car or for traffic lights
 
     public float stopTime = 0f;
@@ -133,6 +134,8 @@ public class AVController : MonoBehaviour
     /// </summary>
     void Start()
     {
+        haveStarted = true;
+
         startTime = Time.time;
 
         GetComponent<Rigidbody>().centerOfMass = centerOfMass;
@@ -201,7 +204,7 @@ public class AVController : MonoBehaviour
             {
                 g.RemoveCongestion(pathList[currentNode-1], pathList[currentNode]);
                 currentNode = 0;
-                reachedDestination = true;
+                haveReachedDestination = true;
             }
             else
             {
@@ -210,7 +213,7 @@ public class AVController : MonoBehaviour
                 if (currentNode!=(nodes.Count-1)) g.AddCongestion(pathList[currentNode], pathList[currentNode+1]);
             }
             
-            if (!reachedDestination && !onOneWay()) 
+            if (!haveReachedDestination && !onOneWay()) 
             {
                 drivingOffset = leftSideOffset;
             }
@@ -297,8 +300,13 @@ public class AVController : MonoBehaviour
     private void OnTriggerEnter(Collider other)
     {
         // stop if other object is car/player
-        if ( !other.isTrigger && (other.tag == "Car" || other.tag == "DriverCar"))
+        if (!other.isTrigger && (other.tag == "Car" || other.tag == "DriverCar"))
         {
+            if (!braking)
+            {
+                UnityEngine.Debug.Log("Collision with another car");
+            }
+
             GetComponent<Rigidbody>().velocity = new Vector3(0,0,0);
             foreach (AxleInfo axleInfo in axleInfos)
             {
@@ -313,10 +321,15 @@ public class AVController : MonoBehaviour
     /// Called when front collider is no longer colliding
     /// </summary>
     /// <param name="other">Collider of the other object</param>
-    private void OnTriggerExit(Collider other) 
+    private void OnTriggerExit(Collider other)
     {
         if (other.tag == "Car" || other.tag == "DriverCar") 
         {
+            if (braking)
+            {
+                UnityEngine.Debug.Log("No longer braking");
+            }
+
             // stop braking so car can move
             foreach (AxleInfo axleInfo in axleInfos)
             {
@@ -327,12 +340,36 @@ public class AVController : MonoBehaviour
         braking = false;
     }
 
+    //Draw the Box Overlap as a gizmo to show where it currently is testing. Click the Gizmos button to see this
+    void OnDrawGizmos()
+    {
+        Gizmos.color = Color.red;
+        //Check that it is being run in Play Mode, so it doesn't try to draw this in Editor mode
+        if (haveStarted)
+        {
+            //Draw a cube where the OverlapBox is (positioned where your GameObject is as well as a size)
+            Gizmos.DrawWireCube(transform.position, transform.localScale);
+        }
+    }
+
     /// <summary>
     /// On every fixed frame update, will check how the car should react to its conditions
     /// </summary>
     private void FixedUpdate()
     {
         frameCount++;
+
+        /*if (gameObject.transform.parent.gameObject.name == "AICar(Clone)")
+        {
+            var player = GameObject.Find("Player");
+            if (player)
+            {
+                UnityEngine.Debug.Log("Player object found");
+                //float distance = Vector3.Distance(player.transform.position, gameObject.transform.position);
+                //UnityEngine.Debug.Log("Distance from player: " + distance);
+
+            }
+        }*/
 
         // Sleep if the round is over
         if (roundOver)
@@ -347,7 +384,7 @@ public class AVController : MonoBehaviour
         }
 
         // Remove AICar if at end of path
-        if (gameObject.transform.parent.gameObject.name == "AICar(Clone)" && reachedDestination)
+        if (gameObject.transform.parent.gameObject.name == "AICar(Clone)" && haveReachedDestination)
         {
             UnityEngine.Debug.Log("Destroyed Car");
             GetComponent<Rigidbody>().Sleep();
@@ -357,12 +394,12 @@ public class AVController : MonoBehaviour
 
         //Stop movement if game timer is paused
         // OR if reached the end of nodes
-        if (currentNode == -1 || (timer != null && timer.isPaused()) || reachedDestination)
+        if (currentNode == -1 || (timer != null && timer.isPaused()) || haveReachedDestination)
         {
-            if (reachedDestination && !roundOver)
+            if (haveReachedDestination && !roundOver)
             {
                 sm.driverReachedDest = true;
-                reachedDestination = false;
+                haveReachedDestination = false;
             }
             foreach (AxleInfo axleInfo in axleInfos)
             {
@@ -376,14 +413,14 @@ public class AVController : MonoBehaviour
         var distanceToNode = Vector3.Distance(transform.position, nodes[currentNode].position);
 
         // If close to node
-        if (distanceToNode < 20f && distanceToNode > 3f)
+        if (distanceToNode < 20f && distanceToNode > 5f)
         {
             // Check if traffic light
             if (pathList.Count > 1 && currentNode > 0 && trafficLightController.trafficCheck(pathList[currentNode - 1], pathList[currentNode]))
             {
-                if (!wasAtTrafficLight)
+                if (!isAtTrafficLight)
                 {
-                    wasAtTrafficLight = true;
+                    isAtTrafficLight = true;
                     UnityEngine.Debug.Log("Now at Traffic Light");
                 }
 
@@ -394,16 +431,20 @@ public class AVController : MonoBehaviour
                 }
                 GetComponent<Rigidbody>().Sleep();
                 return;
-            } 
-            //check for intersection and then raycast if needed 
-            else if (pathList.Count > 1 && currentNode > 0 && !g.trafficLights.Contains(pathList[currentNode]) && isIntersection(pathList[currentNode]) && !inIntersection)
+            }
+            else
             {
-                if (wasAtTrafficLight)
+                if (isAtTrafficLight)
                 {
                     UnityEngine.Debug.Log("Now no longer at Traffic Light");
-                    wasAtTrafficLight = false;
                 }
 
+                isAtTrafficLight = false;
+            }
+
+            //check for intersection and then raycast if needed 
+            if (pathList.Count > 1 && currentNode > 0 && !g.trafficLights.Contains(pathList[currentNode]) && isIntersection(pathList[currentNode]) && !isAtIntersection)
+            {
                 Vector3 centre = nodes[currentNode].position;
 
                 bool clear = true;
@@ -411,64 +452,64 @@ public class AVController : MonoBehaviour
 
                 //check intersection is clear
                 Collider[] hits = Physics.OverlapBox(centre, transform.localScale * 50, Quaternion.identity, layer, QueryTriggerInteraction.Ignore);
+                UnityEngine.Debug.Log(hits.Length + " cars detected in intersection");
                 foreach (Collider collider in hits)
                 {
-                    if (collider != GetComponent<Collider>())
+                    if (collider == GetComponent<Collider>()) continue;
+
+                    var other = collider.gameObject.GetComponent<AVController>();
+                    if (!other.isAtIntersection || !other.isAtIntersection) continue;
+
+                    Vector3 direction = collider.transform.forward;
+                    float dot = Vector3.Dot(direction, transform.forward);
+                    if (dot > 0.5) // other car is travelling in same direction
                     {
-                        if (collider.gameObject.GetComponent<AVController>().inIntersection)
-                        {
-                            Vector3 direction = collider.transform.forward;
-                            float dot = Vector3.Dot(direction, transform.forward);
-                            if (dot > 0.5) // other car is travelling in same direction
-                            {
-                                continue;
-                            }
-                            else if (true)
-                            {
-                                clear = false;
-                            }
-                        }
+                        continue;
+                    }
+                    else if (true)
+                    {
+                        clear = false;
                     }
                 }
-
-                if (turning == direction.left)
+                
+                if (turning == turningDirection.left)
                 {
                     // check to the right
                     hits = Physics.OverlapBox(centre + transform.right * castDistance, new Vector3(2,1,1) * castDistance, transform.rotation, layer, QueryTriggerInteraction.Ignore);
+                    UnityEngine.Debug.Log(hits.Length + " cars detected to the right when turning left.");
                     foreach (Collider collider in hits)
                     {
+                        if (collider == this.GetComponent<Collider>()) continue;
+                        AVController other = collider.gameObject.GetComponent<AVController>();
+
                         Vector3 direction = collider.transform.forward;
                         float dot = Vector3.Dot(direction, transform.right);
                         if (dot < 0) // other car is travelling left, i.e. towards this car
                         {
-                            if (collider == this.GetComponent<Collider>()) continue;
-                            AVController other = collider.gameObject.GetComponent<AVController>();
-                            
-                            if (other.inIntersection) continue;
+                            if (other.isAtIntersection || other.isAtTrafficLight) continue;
 
-                            // ignore cars which give way to you
-                            if (other.braking) continue;
-                            
+                            // ignore cars that don't impede movement
                             if (((int)currentBearing + 1) % 4 == (int)other.currentBearing)
                             {
                                 UnityEngine.Debug.Log("Turning Left: Ignoring car coming from clockwise direction");
                                 continue;
                             }
-                            else if ((((int)currentBearing + 4) - 1) % 4 == (int)other.currentBearing && (other.turning == AVController.direction.left || other.turning == AVController.direction.right))
+                            else if ((((int)currentBearing + 4) - 1) % 4 == (int)other.currentBearing && (other.turning == turningDirection.left || other.turning == turningDirection.right))
                             {
                                 UnityEngine.Debug.Log("Turning Left: Ignoring car coming from anti-clokwise direction turning left or right");
                                 continue;
                             }
-                            else if (Math.Abs(currentBearing - other.currentBearing) == 2 && (other.turning == AVController.direction.left || other.turning == AVController.direction.forward))
+                            else if (Math.Abs(currentBearing - other.currentBearing) == 2 && (other.turning == turningDirection.left || other.turning == turningDirection.forward))
                             {
                                 UnityEngine.Debug.Log("Turning Left: Ignoring car coming in opposite direction going forward or turning left");
                                 continue;
                             }
 
-                            if (other.roadPriority < roadPriority) continue;
+                            // ignore cars which give way to you
+                            if (other.braking) continue;
 
-                            // ignore cars that don't impede movement
-                            //if (other.roadPriority == roadPriority && (other.turning == AVController.direction.left || other.turning == AVController.direction.forward)) continue;
+                            // ignore cars with lower priority
+                            if (other.roadPriority < roadPriority) continue;
 
                             if (other.stopTime < 1 || other.stopTime > stopTime)
                             {
@@ -477,10 +518,11 @@ public class AVController : MonoBehaviour
                         }                        
                     }                
                 }
-                else if (turning == direction.forward)
+                else if (turning == turningDirection.forward)
                 {
                     // check to the right
                     hits = Physics.OverlapBox(centre + transform.right * castDistance, new Vector3(2,1,1) * castDistance, transform.rotation, layer, QueryTriggerInteraction.Ignore);
+                    UnityEngine.Debug.Log(hits.Length + " cars detected to the right when going forward.");
                     foreach (Collider collider in hits)
                     {
                         Vector3 direction = collider.transform.forward;
@@ -489,13 +531,17 @@ public class AVController : MonoBehaviour
                         {
                             if (collider == this.GetComponent<Collider>()) continue;
                             AVController other = collider.gameObject.GetComponent<AVController>();
-                            if (other.inIntersection) continue;
+                            if (other.isAtIntersection || other.isAtTrafficLight) continue;
 
                             if (other.braking) continue;
+
+                        
+
+
+                            // ignore cars with lower priority
                             if (other.roadPriority < roadPriority) continue;
 
-                            // ignore cars that don't impede movement
-                            //if (other.roadPriority == roadPriority && (other.turning == AVController.direction.forward || other.turning == AVController.direction.left)) continue;
+                            
 
                             if (other.stopTime < 1 || other.stopTime > stopTime)
                             {
@@ -505,7 +551,8 @@ public class AVController : MonoBehaviour
                     }
 
                     // check to the left
-                    hits = Physics.OverlapBox(centre - transform.right * castDistance, new Vector3(2,1,1) * castDistance, transform.rotation, layer, QueryTriggerInteraction.Ignore);
+                    hits = Physics.OverlapBox(centre - transform.right * 20, new Vector3(2,1,1) * 20, transform.rotation, layer, QueryTriggerInteraction.Ignore);
+                    UnityEngine.Debug.Log(hits.Length + " cars detected to the left when going forward.");
                     foreach (Collider collider in hits)
                     {
                         Vector3 direction = collider.transform.forward;
@@ -514,7 +561,7 @@ public class AVController : MonoBehaviour
                         {
                             if (collider == this.GetComponent<Collider>()) continue;
                             AVController other = collider.gameObject.GetComponent<AVController>();
-                            if (other.inIntersection) continue;
+                            if (other.isAtIntersection || other.isAtTrafficLight) continue;
 
                             if (other.braking) continue;
                             if (other.roadPriority < roadPriority) continue;
@@ -530,7 +577,7 @@ public class AVController : MonoBehaviour
                     }
 
                     // check forward
-                    hits = Physics.OverlapBox(centre + transform.forward * 5, new Vector3(1, 1, 2) * 5, transform.rotation, layer, QueryTriggerInteraction.Ignore);
+                    /*hits = Physics.OverlapBox(centre + transform.forward * 5, new Vector3(1, 1, 2) * 5, transform.rotation, layer, QueryTriggerInteraction.Ignore);
                     foreach (Collider collider in hits)
                     {
                         Vector3 direction = collider.transform.forward;
@@ -549,19 +596,28 @@ public class AVController : MonoBehaviour
 
                                 foreach (AxleInfo axleInfo in axleInfos)
                                 {
-                                    axleInfo.leftWheel.motorTorque = 0;
-                                    axleInfo.rightWheel.motorTorque = 0;
+                                    axleInfo.leftWheel.brakeTorque = maxMotorTorque;
+                                    axleInfo.rightWheel.brakeTorque = maxMotorTorque;
                                 }
+                                braking = true;
                                 GetComponent<Rigidbody>().Sleep();
                                 return;
                             }
+                            else
+                            {
+                                UnityEngine.Debug.Log("Going forward: Hitting a car so not clear");
+                                clear = false;
+                            }
+
+
                         }
-                    }
+                    }*/
                 }
                 else // turning right
                 {
                     // check to the right
-                    hits = Physics.OverlapBox(centre + transform.right * castDistance, new Vector3(2,1,1) * castDistance, transform.rotation, layer, QueryTriggerInteraction.Ignore);
+                    hits = Physics.OverlapBox(centre + transform.right * 20, new Vector3(2,1,1) * 20, transform.rotation, layer, QueryTriggerInteraction.Ignore);
+                    UnityEngine.Debug.Log(hits.Length + " cars detected to the right when turning right.");
                     foreach (Collider collider in hits)
                     {
                         Vector3 direction = collider.transform.forward;
@@ -570,7 +626,7 @@ public class AVController : MonoBehaviour
                         {
                             if (collider == this.GetComponent<Collider>()) continue;
                             AVController other = collider.gameObject.GetComponent<AVController>();
-                            if (other.inIntersection) continue;
+                            if (other.isAtIntersection || other.isAtTrafficLight) continue;
                           
                             if (other.braking) continue;
                             if (other.roadPriority < roadPriority) continue;
@@ -586,25 +642,29 @@ public class AVController : MonoBehaviour
                     } 
 
                     // check to the left
-                    hits = Physics.OverlapBox(centre - transform.right * castDistance, new Vector3(2,1,1) * castDistance, transform.rotation, layer, QueryTriggerInteraction.Ignore);
+                    hits = Physics.OverlapBox(centre - transform.right * 20, new Vector3(2,1,1) * 20, transform.rotation, layer, QueryTriggerInteraction.Ignore);
+                    UnityEngine.Debug.Log(hits.Length + " cars detected to the left when turning right.");
                     foreach (Collider collider in hits)
                     {
+                        if (collider == this.GetComponent<Collider>()) continue;
+                        AVController other = collider.gameObject.GetComponent<AVController>();
+
+                        if (Math.Abs(currentBearing - other.currentBearing) == 2 && other.turning == AVController.turningDirection.right)
+                        {
+                            UnityEngine.Debug.Log("Turning Right: Ignoring car coming in opposite direction turning right");
+                            continue;
+                        }
+
                         Vector3 direction = collider.transform.forward;
                         float dot = Vector3.Dot(direction, -transform.right);
                         if (dot > 0)
                         {
-                            if (collider == this.GetComponent<Collider>()) continue;
-                            AVController other = collider.gameObject.GetComponent<AVController>();
-                            if (other.inIntersection) continue;
+                            if (other.isAtIntersection || other.isAtTrafficLight) continue;
                            
                             if (other.braking) continue;
 
 
-                            if (Math.Abs(currentBearing - other.currentBearing) == 2 && other.turning == AVController.direction.right)
-                            {
-                                UnityEngine.Debug.Log("Turning Right: Ignoring car coming in opposite direction turning right");
-                                continue;
-                            }
+                            
 
                             if (other.roadPriority < roadPriority) continue;
 
@@ -619,24 +679,27 @@ public class AVController : MonoBehaviour
                     }  
 
                     // check forward
-                    hits = Physics.OverlapBox(centre + transform.forward * castDistance, new Vector3(1,1,2) * castDistance, transform.rotation, layer, QueryTriggerInteraction.Ignore);
+                    hits = Physics.OverlapBox(centre + transform.forward * 20, new Vector3(1,1,2) * 20, transform.rotation, layer, QueryTriggerInteraction.Ignore);
+                    UnityEngine.Debug.Log(hits.Length + " cars detected forward when turning right.");
                     foreach (Collider collider in hits)
                     {
+                        if (collider == this.GetComponent<Collider>()) continue;
+                        AVController other = collider.gameObject.GetComponent<AVController>();
+
+                        if (Math.Abs(currentBearing - other.currentBearing) == 2 && other.turning == AVController.turningDirection.right)
+                        {
+                            UnityEngine.Debug.Log("Turning Right: Ignoring car coming in opposite direction turning right");
+                            continue;
+                        }
+
                         Vector3 direction = collider.transform.forward;
                         float dot = Vector3.Dot(direction, transform.forward);
                         if (dot < 0)
                         {
-                            if (collider == this.GetComponent<Collider>()) continue;
-                            AVController other = collider.gameObject.GetComponent<AVController>();
-                            if (other.inIntersection) continue;
+                            if (other.isAtIntersection) continue;
                             
                             if (other.braking) continue;
 
-                            if (Math.Abs(currentBearing - other.currentBearing) == 2 && other.turning == AVController.direction.right)
-                            {
-                                UnityEngine.Debug.Log("Turning Right: Ignoring car coming in opposite direction turning right");
-                                continue;
-                            }
 
                             if (other.roadPriority < roadPriority) continue;
 
@@ -653,7 +716,7 @@ public class AVController : MonoBehaviour
 
                 if (clear)
                 {
-                    inIntersection = true;
+                    isAtIntersection = true;
                     stopTime = UnityEngine.Random.Range(0f, 1f);
                     StartCoroutine("Intersection");
                 }
@@ -692,6 +755,7 @@ public class AVController : MonoBehaviour
                             gameObject.transform.position = nodes[currentNode].position;
                             gameObject.transform.LookAt(nodes[currentNode + 1]);
                             gameObject.transform.position = transform.TransformPoint(new Vector3(-drivingOffset, 0, 0));
+                            UnityEngine.Debug.Log("Have been stationary for awhile, moving back to previous node");
                         }
 
                         consecutiveFramesWithNoSpeed = 0;
@@ -839,15 +903,15 @@ public class AVController : MonoBehaviour
         float dot = Vector3.Dot(leftDir, nextDir);
         if (dot < -0.5)
         {
-            turning = direction.right;
+            turning = turningDirection.right;
         }
         else if (dot > 0.5)
         {
-            turning = direction.left;
+            turning = turningDirection.left;
         }
         else 
         {
-            turning = direction.forward;
+            turning = turningDirection.forward;
         }
     }
 
@@ -858,7 +922,7 @@ public class AVController : MonoBehaviour
     IEnumerator Intersection()
     {
         yield return new WaitForSeconds(6);
-        inIntersection = false;
+        isAtIntersection = false;
     }
 
     /// <summary>

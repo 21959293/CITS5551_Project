@@ -16,6 +16,15 @@ Assets/
 # Whitelist important files to track. 
 #!*.cs
 
-# Folder to not ignore.
+# Folders to not ignore.
 !Assets/Scripts/
+!Assets/Scripts/*
+
+!Packages/
+!Packages/*
+
 !ProjectSettings/
+!ProjectSettings/*
+
+!UserSettings/
+!UserSettings/*

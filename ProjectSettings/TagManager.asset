@@ -4,8 +4,9 @@
 TagManager:
   serializedVersion: 2
   tags:
-  - DriverCar
   - Car
+  - confirmButton0
+  - DriverCar
   layers:
   - Default
   - TransparentFX
@@ -13,14 +14,14 @@ TagManager:
   - 
   - Water
   - UI
+  - 
+  - 
   - PostProcessing
   - Path
   - MiniMap
   - FullMap
   - Cars
   - Roof
-  - 
-  - 
   - 
   - 
   - 

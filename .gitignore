@@ -8,6 +8,7 @@ Assets/
 !/.gitattributes
 !/*.csproj
 !/*.sln
+!/*.mp4
 
 # Whitelist all other folders.
 #!*/
@@ -18,7 +19,7 @@ Assets/
 
 # Folders to not ignore.
 !Assets/Scripts/
-!Assets/Scripts/*
+!Assets/Scripts/*.cs
 
 !Packages/
 !Packages/*

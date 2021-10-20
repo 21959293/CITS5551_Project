@@ -1,5 +1,6 @@
 # Ignore everything in repository root. 
 *
+Library/
 
 # Files to not ignore.
 !/.gitignore
@@ -8,7 +9,7 @@
 !/*.sln
 
 # Whitelist all other folders.
-!*/
+#!*/
 
 # Whitelist important files to track. 
 !*.cs

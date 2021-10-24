@@ -5,18 +5,17 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/LoginScreen.unity
     guid: 51005ff972e584281855012fd5a51107
   - enabled: 1
-    path: Assets/Scenes/MainGame.unity
-    guid: 6a8075bb8b6a64518965f00954e6fca7
-  - enabled: 1
-    path: Assets/Scenes/EndScreen.unity
-    guid: 7867d3076fe674d66b5db95d7198b299
-  - enabled: 1
     path: Assets/Scenes/MenuScene.unity
     guid: 894876cbb079e854dbdfe007eed1ffee
+  - enabled: 1
+    path: Assets/Scenes/MainGame.unity
+    guid: 6a8075bb8b6a64518965f00954e6fca7
+  - enabled: 0
+    path: Assets/Scenes/EndScreen.unity
+    guid: 7867d3076fe674d66b5db95d7198b299
   m_configObjects:
-    com.unity.xr.management.loader_settings: {fileID: 11400000, guid: 21d446ed0c4ef4f4b8fd0f898058c0a3,
-      type: 2}
+    com.unity.xr.management.loader_settings: {fileID: 11400000, guid: 21d446ed0c4ef4f4b8fd0f898058c0a3, type: 2}

@@ -42,8 +42,10 @@ public class AVController : MonoBehaviour
     public int frameCount = 0; // Number of frames that have been counted
     public int consecutiveFramesWithNoSpeed = 0; // Number of frames where the speed has maintained 0
 
-    static int minConsecutiveFramesWithNoSpeed = 3000; // Max number of frames where the speed has maintained 0
-    static int maxConsecutiveFramesWithNoSpeed = 20000; // Max number of frames where the speed has maintained 0
+    float fps = 0;
+    static int minConsecutiveFramesWithNoSpeed = 3600;
+    static int minConsecutiveSecondsWithNoSpeed = 150; // Min number of frames where the speed has maintained 0
+    static int maxConsecutiveSecondsWithNoSpeed = 210; // Max number of frames where the speed has maintained 0
     public float currentSpeed = 0f; // Current speed the car is going
     public float maxSpeed = 30f; // Maximum allowable speed for the car
     public float lastSpeed = 0f; // Last speed the car was going
@@ -739,34 +741,6 @@ public class AVController : MonoBehaviour
         {
             currentSpeed = 2 * Mathf.PI * axleInfo.leftWheel.radius * axleInfo.leftWheel.rpm * 60 / 1000;
 
-            if (currentSpeed == 0)
-            {
-                consecutiveFramesWithNoSpeed++;
-
-                if (consecutiveFramesWithNoSpeed >= minConsecutiveFramesWithNoSpeed)
-                {
-                    var randomNumber = UnityEngine.Random.Range(minConsecutiveFramesWithNoSpeed, maxConsecutiveFramesWithNoSpeed);
-                    if (randomNumber < consecutiveFramesWithNoSpeed)
-                    {
-                        if (nodes.Count > 1)
-                        {
-                            currentNode--;
-
-                            gameObject.transform.position = nodes[currentNode].position;
-                            gameObject.transform.LookAt(nodes[currentNode + 1]);
-                            gameObject.transform.position = transform.TransformPoint(new Vector3(-drivingOffset, 0, 0));
-                            UnityEngine.Debug.Log("Have been stationary for awhile, moving back to previous node");
-                        }
-
-                        consecutiveFramesWithNoSpeed = 0;
-                    }
-                }
-            }
-            else
-            {
-                consecutiveFramesWithNoSpeed = 0;
-            }
-
             if (axleInfo.steering)
             {
                 axleInfo.leftWheel.steerAngle = newSteer;
@@ -791,6 +765,45 @@ public class AVController : MonoBehaviour
             
             ApplyLocalPositionToVisuals(axleInfo.leftWheel);
             ApplyLocalPositionToVisuals(axleInfo.rightWheel);
+        }
+
+        if (currentSpeed == 0 && !isAtTrafficLight)
+        {
+            consecutiveFramesWithNoSpeed++;
+            if (consecutiveFramesWithNoSpeed > minConsecutiveFramesWithNoSpeed)
+            {
+                var newFps = 1 / Time.unscaledDeltaTime;
+                if (newFps >= 25)
+                {
+                    fps = newFps;
+                    UnityEngine.Debug.Log("FPS:" + fps);
+                }
+
+                var consecutiveSecondsWithNoSpeed = consecutiveFramesWithNoSpeed / fps;
+                UnityEngine.Debug.Log("Consecutive seconds with no speed:" + consecutiveSecondsWithNoSpeed);
+                if (consecutiveSecondsWithNoSpeed >= minConsecutiveSecondsWithNoSpeed)
+                {
+                    var randomNumber = UnityEngine.Random.Range(minConsecutiveSecondsWithNoSpeed, maxConsecutiveSecondsWithNoSpeed);
+                    if (randomNumber < consecutiveFramesWithNoSpeed)
+                    {
+                        if (nodes.Count > 1)
+                        {
+                            currentNode--;
+
+                            gameObject.transform.position = nodes[currentNode].position;
+                            gameObject.transform.LookAt(nodes[currentNode + 1]);
+                            gameObject.transform.position = transform.TransformPoint(new Vector3(-drivingOffset, 0, 0));
+                            UnityEngine.Debug.Log("Have been stationary for awhile, moving back to previous node");
+                        }
+
+                        consecutiveFramesWithNoSpeed = 0;
+                    }
+                }
+            }
+        }
+        else
+        {
+            consecutiveFramesWithNoSpeed = 0;
         }
 
         CheckWaypointDistance();

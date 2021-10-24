@@ -47,7 +47,7 @@ public class MenuManager : MonoBehaviour
             errorText.text = "";
             PlayerPrefs.SetString("gender", gender);
             PlayerPrefs.SetString("playerID", playerID);
-            SceneManager.LoadScene(3);
+            SceneManager.LoadScene("MenuScene");
         }
     }
 

@@ -119,7 +119,7 @@ public class CarDriverOption : MonoBehaviour
         //Debug.Log("You selected car number " + index);
         playerCarIndex = index;
         PlayerPrefs.SetInt("Select Car", index);
-        SceneManager.LoadScene(1);
+        SceneManager.LoadScene("MainGame");
         //carName = CarDescription[driverIndex];
     }
 }

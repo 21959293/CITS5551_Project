@@ -111,6 +111,7 @@ public class MessageBoxControl : MonoBehaviour
     {
         showChatIcon = true;
         messageBoxIconButton.gameObject.SetActive(true);
+        Debug.Log("Showing the message box");
     }
 
     private void hideMessageBoxIcon()

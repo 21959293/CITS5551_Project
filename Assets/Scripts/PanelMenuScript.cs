@@ -34,13 +34,13 @@ public class PanelMenuScript : MonoBehaviour
     {
        // Debug.Log("It's on  onOwnVehicleButton!");
         modeOfTransport = 0;
-        SceneManager.LoadScene(1);
+        SceneManager.LoadScene("MainGame");
     }
     public void onAvVehicleButton()
     {
        //Debug.Log("It's on AvVehicleButton!");
        modeOfTransport = 1;
-       SceneManager.LoadScene(1);
+       SceneManager.LoadScene("MainGame");
     }
     public void onDriverVehicleButton()
     {
